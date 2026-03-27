@@ -25,3 +25,6 @@ SELECT *
 FROM tbl1;
 
 ```
+docker run --name server-mariadb -d \
+-p 3340:3306 -v volume-mariadb:/var/lib/mysql --env MARIADB_ROOT_PASSWORD=123456 \
+mariadb:10.11.15-jammy
