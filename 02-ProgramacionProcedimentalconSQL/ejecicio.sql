@@ -56,38 +56,22 @@ CREATE OR ALTER PROCEDURE sp_RegistrarVenta
     @cantidad INT
 AS
 BEGIN
-
     BEGIN TRY
 
-        BEGIN TRANSACTION;
-
-        -- ===VALIDAR CLIENTE===
+        -- === VALIDAR CLIENTE ===
         IF NOT EXISTS (SELECT 1 FROM Cliente WHERE CustomerID = @idCliente)
         BEGIN
             PRINT 'El cliente no existe';
-            ROLLBACK;
             RETURN;
         END
 
-        -- =====DECLARAR VARIABLE PARA IDVENTA===
-        DECLARE @idVenta INT;
-
-        -- ==INSERTAR VENTA===
-        INSERT INTO VENTA (fecha, idCliente)
-        VALUES (GETDATE(), @idCliente);
-
-        -- 4. OBTENER ID GENERADO
-        SET @idVenta = SCOPE_IDENTITY();
-
-        -- ==VALIDAR PRODUCTO==
+        -- === VALIDAR PRODUCTO ===
         IF NOT EXISTS (SELECT 1 FROM Productos WHERE ProductID = @idProducto)
         BEGIN
             PRINT 'El producto no existe';
-            ROLLBACK;
             RETURN;
         END
 
-        -- ==OBTENER PRECIO Y EXISTENCIA==
         DECLARE @precio MONEY;
         DECLARE @stock INT;
 
@@ -97,26 +81,39 @@ BEGIN
         FROM Productos
         WHERE ProductID = @idProducto;
 
-        -- ===VALIDAR EXISTENCIA===
+        -- === VALIDAR EXISTENCIA ===
         IF @stock < @cantidad
         BEGIN
             PRINT 'No hay suficiente existencia';
-            ROLLBACK;
             RETURN;
         END
 
+        BEGIN TRANSACTION;
+
+        -- === DECLARAR VARIABLE ===
+        DECLARE @idVenta INT;
+
+        -- === INSERTAR VENTA ===
+        INSERT INTO VENTA (fecha, idCliente)
+        VALUES (GETDATE(), @idCliente);
+
+        -- === OBTENER ID ===
+        SET @idVenta = SCOPE_IDENTITY();
+
+        -- === INSERTAR DETALLE ===
         INSERT INTO DetalleVenta (idVenta, idProducto, precioVenta, cantidad)
         VALUES (@idVenta, @idProducto, @precio, @cantidad);
 
+        -- === ACTUALIZAR STOCK ===
         UPDATE Productos
         SET UnitsInStock = UnitsInStock - @cantidad
         WHERE ProductID = @idProducto;
+
         COMMIT;
 
         PRINT 'Venta registrada correctamente';
 
     END TRY
-
     BEGIN CATCH
 
         IF @@TRANCOUNT > 0
@@ -125,5 +122,6 @@ BEGIN
         PRINT 'ERROR: ' + ERROR_MESSAGE();
 
     END CATCH
-
 END;
+
+EXEC sp_RegistrarVenta 'ALFKI',1,5;
