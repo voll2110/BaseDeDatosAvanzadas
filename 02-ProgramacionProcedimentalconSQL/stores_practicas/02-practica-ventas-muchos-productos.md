@@ -198,3 +198,4 @@ Tambien se valida:
 - que el stock alcance
 
 Y ademas se actualiza el stock automaticamente despues de guardar la venta.
+
